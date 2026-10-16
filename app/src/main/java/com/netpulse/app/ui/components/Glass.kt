@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +38,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.netpulse.app.ui.theme.LocalNetColors
 import com.netpulse.app.ui.theme.Palette
 
 /**
@@ -45,16 +47,17 @@ import com.netpulse.app.ui.theme.Palette
  */
 @Composable
 fun GlassBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
+    val c = LocalNetColors.current
     Box(
         modifier = modifier
-            .background(Palette.Background)
+            .background(c.background)
             .drawBehind {
                 fun orb(color: Color, alpha: Float, cx: Float, cy: Float, r: Float) {
                     val center = Offset(size.width * cx, size.height * cy)
                     val radius = size.maxDimension * r
                     drawCircle(
                         brush = Brush.radialGradient(
-                            listOf(color.copy(alpha = alpha), Color.Transparent),
+                            listOf(color.copy(alpha = alpha * c.orbStrength), Color.Transparent),
                             center = center,
                             radius = radius,
                         ),
@@ -62,21 +65,29 @@ fun GlassBackground(modifier: Modifier = Modifier, content: @Composable BoxScope
                         center = center,
                     )
                 }
-                orb(Palette.OrbBlue, 0.40f, 0.05f, 0.0f, 0.55f)
-                orb(Palette.OrbViolet, 0.28f, 0.95f, 0.35f, 0.50f)
-                orb(Palette.OrbOrange, 0.18f, 0.45f, 1.05f, 0.50f)
+                orb(c.orbBlue, 0.40f, 0.05f, 0.0f, 0.55f)
+                orb(c.orbViolet, 0.28f, 0.95f, 0.35f, 0.50f)
+                orb(c.orbOrange, 0.18f, 0.45f, 1.05f, 0.50f)
             },
         content = content,
     )
 }
 
-private val glassFill = Brush.verticalGradient(listOf(Palette.GlassTop, Palette.GlassBottom))
-private val glassEdge = Brush.verticalGradient(listOf(Palette.GlassEdgeTop, Palette.GlassEdgeBottom))
-
-fun Modifier.glass(shape: Shape): Modifier = this
-    .clip(shape)
-    .background(glassFill)
-    .border(1.dp, glassEdge, shape)
+/** Frosted surface: soft vertical fill and a brighter top edge (plus a soft shadow in light mode). */
+@Composable
+fun Modifier.glass(shape: Shape): Modifier {
+    val c = LocalNetColors.current
+    val fill = remember(c) { Brush.verticalGradient(listOf(c.glassTop, c.glassBottom)) }
+    val edge = remember(c) { Brush.verticalGradient(listOf(c.glassEdgeTop, c.glassEdgeBottom)) }
+    return this
+        .then(
+            if (c.isDark) Modifier
+            else Modifier.shadow(12.dp, shape, ambientColor = Color(0x330B0D1A), spotColor = Color(0x330B0D1A))
+        )
+        .clip(shape)
+        .background(fill)
+        .border(1.dp, edge, shape)
+}
 
 @Composable
 fun GlassCard(
@@ -142,7 +153,7 @@ fun <T> Segmented(
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0x1AFFFFFF))
+            .background(Palette.Fill)
             .padding(3.dp)
             .selectableGroup(),
     ) {
@@ -168,7 +179,7 @@ fun <T> Segmented(
 /** iOS-style switch: green when on, white knob. */
 @Composable
 fun GlassSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
-    val track by animateColorAsState(if (checked) Palette.Good else Color(0x38FFFFFF), label = "track")
+    val track by animateColorAsState(if (checked) Palette.Good else Palette.SwitchOff, label = "track")
     val knobX by animateDpAsState(if (checked) 22.dp else 2.dp, label = "knob")
     Box(
         modifier = modifier

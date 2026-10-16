@@ -28,6 +28,7 @@ import com.netpulse.app.data.ConnectionInfo
 import com.netpulse.app.data.NetworkType
 import com.netpulse.app.data.SessionTotals
 import com.netpulse.app.data.SpeedFormat
+import com.netpulse.app.data.SpeedRepository
 import com.netpulse.app.data.SpeedSample
 import com.netpulse.app.data.SpeedTestResult
 import com.netpulse.app.data.TodayUsage
@@ -44,8 +45,10 @@ fun DashboardScreen(
     connection: ConnectionInfo,
     today: TodayUsage?,
     lastTest: SpeedTestResult?,
+    refreshSeconds: Int,
     wide: Boolean,
 ) {
+    val graphTitle = "Last ${SpeedRepository.HISTORY_SIZE * refreshSeconds} seconds"
     val down = SpeedFormat.detailed(current?.downBps ?: 0)
     val up = SpeedFormat.detailed(current?.upBps ?: 0)
     // System numbers (needs Usage access) are more complete than what the meter saw itself.
@@ -64,7 +67,7 @@ fun DashboardScreen(
         Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) { stats(Modifier.weight(1f)) }
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                GraphCard(history, Modifier.weight(1f).fillMaxSize())
+                GraphCard(graphTitle, history, Modifier.weight(1f).fillMaxSize())
                 ConnectionCard(connection, Modifier.width(320.dp))
             }
         }
@@ -81,7 +84,7 @@ fun DashboardScreen(
                 StatCard(usedLabel, used, Palette.TextPrimary, Modifier.weight(1f))
                 StatCard("Ping · last test", ping, Palette.TextPrimary, Modifier.weight(1f))
             }
-            GraphCard(history, Modifier.fillMaxWidth().height(300.dp))
+            GraphCard(graphTitle, history, Modifier.fillMaxWidth().height(300.dp))
             ConnectionCard(connection, Modifier.fillMaxWidth())
         }
     }
@@ -104,10 +107,10 @@ private fun StatCard(label: String, parts: SpeedFormat.Parts, color: Color, modi
 }
 
 @Composable
-private fun GraphCard(history: List<SpeedSample>, modifier: Modifier) {
+private fun GraphCard(title: String, history: List<SpeedSample>, modifier: Modifier) {
     GlassCard(modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("Last 60 seconds", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             Legend("Download", Palette.Download)
             Box(Modifier.width(14.dp))
             Legend("Upload", Palette.Upload)
@@ -153,6 +156,7 @@ private fun InfoRow(label: String, value: String, valueColor: Color = Palette.Te
     }
 }
 
+@Composable
 private fun signalQuality(dbm: Int, type: NetworkType): Pair<String, Color> {
     val (good, fair) = if (type == NetworkType.WIFI) -60 to -75 else -90 to -105
     return when {

@@ -131,7 +131,7 @@ class SpeedMeterService : Service() {
             if (screenOn || !current.pauseWhenScreenOff) {
                 sampler.sample()?.let { publish(it, current) }
             }
-            nextTick += INTERVAL_MS
+            nextTick += current.refreshSeconds * 1_000L
             val wait = nextTick - SystemClock.elapsedRealtime()
             if (wait > 0) delay(wait) else nextTick = SystemClock.elapsedRealtime()
         }
@@ -153,7 +153,7 @@ class SpeedMeterService : Service() {
         val sample = SpeedSample(reading.downBps, reading.upBps, network, System.currentTimeMillis())
         app.speed.publish(sample, reading.elapsedMs)
 
-        val icon = renderer.render(current.iconStyle, reading.downBps, reading.upBps)
+        val icon = renderer.render(current.iconStyle, reading.downBps, reading.upBps, current.unit)
         val today = app.usage.today.value
         notifications.notify(
             notifications.build(
@@ -177,7 +177,6 @@ class SpeedMeterService : Service() {
 
     companion object {
         private const val TAG = "SpeedMeterService"
-        private const val INTERVAL_MS = 1_000L
         private const val USAGE_INTERVAL_MS = 60_000L
         private const val WIDGET_EVERY_TICKS = 2L
 

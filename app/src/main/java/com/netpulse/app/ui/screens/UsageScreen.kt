@@ -65,7 +65,7 @@ fun UsageScreen(state: UsageUiState, settings: MeterSettings, wide: Boolean) {
                 Text("Usage access needed", style = MaterialTheme.typography.headlineLarge)
                 Text(
                     "Android keeps exact Wi-Fi and mobile data numbers, even for time the meter was off. " +
-                        "Allow NetPulse to read them: find NetPulse in the list and switch it on.",
+                        "Allow Netpulse to read them: find Netpulse in the list and switch it on.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = Palette.TextSecondary,
                 )
@@ -142,12 +142,12 @@ private fun LimitCard(used: Long, limitMb: Int, modifier: Modifier) {
         }
         val limit = limitMb * 1_000_000L
         val fraction = (used.toFloat() / limit).coerceIn(0f, 1f)
-        val barColor = if (fraction >= 1f) Color(0xFFFF6B5E) else if (fraction >= 0.8f) Palette.Warn else Palette.Upload
+        val barColor = if (fraction >= 1f) Palette.Danger else if (fraction >= 0.8f) Palette.Warn else Palette.Upload
         Row {
             Text("Mobile data limit", style = MaterialTheme.typography.labelMedium, color = Palette.TextSecondary, modifier = Modifier.weight(1f))
             Text("${SpeedFormat.bytes(used)} / ${SpeedFormat.bytes(limit)}", style = MaterialTheme.typography.labelMedium)
         }
-        Box(Modifier.fillMaxWidth().height(10.dp).clip(CircleShape).background(Color(0x24FFFFFF))) {
+        Box(Modifier.fillMaxWidth().height(10.dp).clip(CircleShape).background(Palette.FillStrong)) {
             Box(Modifier.fillMaxWidth(fraction).height(10.dp).clip(CircleShape).background(barColor))
         }
         Text("Alert at 80% and 100%", style = MaterialTheme.typography.labelMedium, color = Palette.TextTertiary)
@@ -157,6 +157,8 @@ private fun LimitCard(used: Long, limitMb: Int, modifier: Modifier) {
 @Composable
 private fun DailyChart(days: List<DayUsage>, modifier: Modifier) {
     val max = (days.maxOfOrNull { it.wifi + it.mobile } ?: 0L).coerceAtLeast(1L)
+    val wifiColor = Palette.Download
+    val mobileColor = Palette.Upload
     GlassCard(modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text("Daily usage · 14 days", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
@@ -178,11 +180,11 @@ private fun DailyChart(days: List<DayUsage>, modifier: Modifier) {
                 val wifiH = size.height * d.wifi / max
                 val mobileH = size.height * d.mobile / max
                 if (mobileH > 0) {
-                    drawRoundRect(Palette.Upload, Offset(x, size.height - mobileH), Size(barW, mobileH), radius)
+                    drawRoundRect(mobileColor, Offset(x, size.height - mobileH), Size(barW, mobileH), radius)
                 }
                 if (wifiH > 0) {
                     val top = size.height - mobileH - wifiH - if (mobileH > 0) 3.dp.toPx() else 0f
-                    drawRoundRect(Palette.Download, Offset(x, top), Size(barW, wifiH), radius)
+                    drawRoundRect(wifiColor, Offset(x, top), Size(barW, wifiH), radius)
                 }
             }
         }
@@ -238,7 +240,7 @@ private fun AppRow(app: AppUsage, top: Long) {
                 Image(icon, contentDescription = null, modifier = Modifier.size(32.dp).clip(RoundedCornerShape(9.dp)))
             } else {
                 Box(
-                    Modifier.size(32.dp).clip(RoundedCornerShape(9.dp)).background(Color(0x29FFFFFF)),
+                    Modifier.size(32.dp).clip(RoundedCornerShape(9.dp)).background(Palette.FillStrong),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(app.name.take(1), style = MaterialTheme.typography.labelLarge)
@@ -253,7 +255,7 @@ private fun AppRow(app: AppUsage, top: Long) {
             )
             Text(SpeedFormat.bytes(app.total).toString(), style = MaterialTheme.typography.labelLarge.copy(fontFamily = Mono))
         }
-        Row(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Color(0x1FFFFFFF))) {
+        Row(Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Palette.Fill)) {
             val wifiFrac = app.wifi.toFloat() / top
             val mobileFrac = app.mobile.toFloat() / top
             if (wifiFrac > 0f) Box(Modifier.weight(wifiFrac).height(6.dp).background(Palette.Download))

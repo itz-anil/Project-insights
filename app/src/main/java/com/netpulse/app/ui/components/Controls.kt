@@ -35,7 +35,7 @@ fun PillButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
             .clip(CircleShape)
             .then(
                 if (primary) Modifier.background(Palette.Selected)
-                else Modifier.background(Color(0x1FFFFFFF)).border(1.dp, Color(0x3DFFFFFF), CircleShape)
+                else Modifier.background(Palette.Fill).border(1.dp, Palette.FillStrong, CircleShape)
             )
             .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 48.dp)
@@ -82,7 +82,7 @@ private fun RoundIconButton(symbol: String, description: String, onClick: () -> 
         Modifier
             .size(44.dp)
             .clip(CircleShape)
-            .background(Color(0x1FFFFFFF))
+            .background(Palette.Fill)
             .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,

@@ -39,7 +39,12 @@ import com.netpulse.app.ui.screens.UsageScreen
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.netpulse.app.ui.screens.DashboardScreen
+import com.netpulse.app.ui.screens.SettingsActions
 import com.netpulse.app.ui.screens.SettingsScreen
+import com.netpulse.app.ui.theme.isDarkTheme
+import androidx.activity.SystemBarStyle
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import com.netpulse.app.ui.theme.NetPulseTheme
 import com.netpulse.app.ui.theme.Palette
 
@@ -58,7 +63,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         SpeedMeterService.start(this)
         val startTab = if (intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true) Tab.SETTINGS else Tab.DASHBOARD
-        setContent { NetPulseTheme { NetPulseRoot(vm, startTab) } }
+        setContent {
+            val settings by vm.settings.collectAsStateWithLifecycle()
+            val dark = isDarkTheme(settings.themeMode)
+            // Status / navigation bar icons: light on dark, dark on light.
+            DisposableEffect(dark) {
+                val transparent = android.graphics.Color.TRANSPARENT
+                enableEdgeToEdge(
+                    statusBarStyle = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent),
+                    navigationBarStyle = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent),
+                )
+                onDispose { }
+            }
+            NetPulseTheme(dark) { NetPulseRoot(vm, startTab) }
+        }
     }
 
     companion object {
@@ -123,7 +141,7 @@ private fun NetPulseRoot(vm: MainViewModel, startTab: Tab) {
                 }
 
                 when (tab) {
-                    Tab.DASHBOARD -> DashboardScreen(current, history, session, connection, today, testHistory.firstOrNull(), wide)
+                    Tab.DASHBOARD -> DashboardScreen(current, history, session, connection, today, testHistory.firstOrNull(), settings.refreshSeconds, wide)
                     Tab.USAGE -> UsageScreen(usage, settings, wide)
                     Tab.SPEED_TEST -> SpeedTestScreen(
                         test = test,
@@ -136,16 +154,23 @@ private fun NetPulseRoot(vm: MainViewModel, startTab: Tab) {
                     Tab.SETTINGS -> SettingsScreen(
                         settings = settings,
                         wide = wide,
-                        onIconStyle = { vm.setIconStyle(it) },
-                        onShowDetails = { vm.setShowDetails(it) },
-                        onPauseWhenScreenOff = { vm.setPauseWhenScreenOff(it) },
-                        onStartOnBoot = { vm.setStartOnBoot(it) },
-                        onBubble = { vm.setBubble(it) },
-                        onAlerts = { vm.setAlerts(it) },
-                        onDailyLimit = { vm.setDailyLimitMb(it) },
-                        onMonthlyLimit = { vm.setMonthlyLimitMb(it) },
-                        onBillingDay = { vm.setBillingDay(it) },
-                        onRequestNotifications = requestNotifications,
+                        actions = remember(vm) {
+                            SettingsActions(
+                                onIconStyle = { vm.setIconStyle(it) },
+                                onUnit = { vm.setUnit(it) },
+                                onRefresh = { vm.setRefreshSeconds(it) },
+                                onTheme = { vm.setThemeMode(it) },
+                                onShowDetails = { vm.setShowDetails(it) },
+                                onPauseWhenScreenOff = { vm.setPauseWhenScreenOff(it) },
+                                onStartOnBoot = { vm.setStartOnBoot(it) },
+                                onBubble = { vm.setBubble(it) },
+                                onAlerts = { vm.setAlerts(it) },
+                                onDailyLimit = { vm.setDailyLimitMb(it) },
+                                onMonthlyLimit = { vm.setMonthlyLimitMb(it) },
+                                onBillingDay = { vm.setBillingDay(it) },
+                                onStatusIconsConfirmed = { vm.setStatusIconsConfirmed(it) },
+                            )
+                        },
                     )
                 }
             }

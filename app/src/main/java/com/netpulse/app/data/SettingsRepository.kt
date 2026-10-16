@@ -14,6 +14,12 @@ import kotlinx.coroutines.flow.map
 /** What the status bar icon shows. The icon itself is always on (mandatory). */
 enum class IconStyle { TOTAL, DOWNLOAD, BOTH }
 
+/** App appearance. SYSTEM follows the tablet's light/dark setting automatically. */
+enum class ThemeMode { SYSTEM, LIGHT, DARK }
+
+/** MB/s = megabytes per second (file sizes); Mbps = megabits per second (internet plans). */
+enum class SpeedUnit { MBYTES, MBITS }
+
 data class MeterSettings(
     val iconStyle: IconStyle = IconStyle.TOTAL,
     /** Optional: rich notification panel. Off = one silent line. */
@@ -29,6 +35,12 @@ data class MeterSettings(
     val monthlyMobileLimitMb: Int = 5_000,
     /** Day of month (1–28) the mobile billing cycle starts. */
     val billingDay: Int = 1,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val unit: SpeedUnit = SpeedUnit.MBYTES,
+    /** How often the meter refreshes: 1, 2 or 3 seconds. */
+    val refreshSeconds: Int = 1,
+    /** The user confirmed One UI shows all status bar icons (cannot be detected). */
+    val statusIconsConfirmed: Boolean = false,
 )
 
 class SettingsRepository(private val context: Context) {
@@ -44,6 +56,10 @@ class SettingsRepository(private val context: Context) {
         val monthlyLimit = intPreferencesKey("monthly_mobile_limit_mb")
         val billingDay = intPreferencesKey("billing_day")
         val alertMarks = stringPreferencesKey("alert_marks")
+        val themeMode = stringPreferencesKey("theme_mode")
+        val unit = stringPreferencesKey("unit")
+        val refreshSeconds = intPreferencesKey("refresh_seconds")
+        val statusIconsConfirmed = booleanPreferencesKey("status_icons_confirmed")
     }
 
     val settings: Flow<MeterSettings> = context.dataStore.data.map { it.toSettings() }
@@ -57,6 +73,10 @@ class SettingsRepository(private val context: Context) {
     suspend fun setDailyLimitMb(value: Int) = edit { it[Keys.dailyLimit] = value.coerceIn(0, 100_000) }
     suspend fun setMonthlyMobileLimitMb(value: Int) = edit { it[Keys.monthlyLimit] = value.coerceIn(0, 1_000_000) }
     suspend fun setBillingDay(value: Int) = edit { it[Keys.billingDay] = value.coerceIn(1, 28) }
+    suspend fun setThemeMode(value: ThemeMode) = edit { it[Keys.themeMode] = value.name }
+    suspend fun setUnit(value: SpeedUnit) = edit { it[Keys.unit] = value.name }
+    suspend fun setRefreshSeconds(value: Int) = edit { it[Keys.refreshSeconds] = value.coerceIn(1, 3) }
+    suspend fun setStatusIconsConfirmed(value: Boolean) = edit { it[Keys.statusIconsConfirmed] = value }
 
     /** Remembers which alerts were already shown, so each fires once. */
     suspend fun alertShown(mark: String): Boolean =
@@ -85,6 +105,14 @@ class SettingsRepository(private val context: Context) {
             dailyLimitMb = this[Keys.dailyLimit] ?: d.dailyLimitMb,
             monthlyMobileLimitMb = this[Keys.monthlyLimit] ?: d.monthlyMobileLimitMb,
             billingDay = this[Keys.billingDay] ?: d.billingDay,
+            themeMode = this[Keys.themeMode]
+                ?.let { name -> ThemeMode.entries.firstOrNull { it.name == name } }
+                ?: d.themeMode,
+            unit = this[Keys.unit]
+                ?.let { name -> SpeedUnit.entries.firstOrNull { it.name == name } }
+                ?: d.unit,
+            refreshSeconds = (this[Keys.refreshSeconds] ?: d.refreshSeconds).coerceIn(1, 3),
+            statusIconsConfirmed = this[Keys.statusIconsConfirmed] ?: d.statusIconsConfirmed,
         )
     }
 }

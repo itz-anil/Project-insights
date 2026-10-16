@@ -1,8 +1,8 @@
-# NetPulse — Network Speed Meter (Samsung Galaxy Tab A9)
+# Netpulse — Network Speed Meter (Samsung Galaxy Tab A9)
 
 Status bar में live network speed (MB/s) दिखाने वाला Android app, iPhone जैसे glassy look के साथ।
 
-## Features (v1.0.0) ✅
+## Features (v1.1.0) ✅
 
 | Feature | विवरण |
 |---|---|
@@ -17,6 +17,8 @@ Status bar में live network speed (MB/s) दिखाने वाला A
 | **Home screen widget** | 4×2 glass widget: download, upload, आज का usage |
 | Battery बचत | Screen off पर pause; boot पर auto-start |
 | Samsung setup checklist | Notification, battery, status bar icons, usage access, overlay |
+| **Light / Dark mode** | Auto (tablet की setting के साथ बदलता है), या हमेशा Light / Dark; widget भी साथ बदलता है |
+| Unit और refresh | MB/s या Mbps; हर 1, 2 या 3 second पर update |
 | UI | Glass look, Plus Jakarta Sans (text) + JetBrains Mono (numbers), tablet के लिए wide layout |
 
 ## Permissions क्यों चाहिए
@@ -30,15 +32,17 @@ Status bar में live network speed (MB/s) दिखाने वाला A
 
 ## Tab पर install कैसे करें
 
-1. `NetPulse-v1.0.0.apk` (signed release, ~1.3 MB) Tab पर copy करें।
-   पहले वाला test version install है तो **पहले उसे uninstall करें** (signing key अलग है)।
+1. `Netpulse-v1.1.0.apk` (signed release) Tab पर copy करें।
+   v1.0.0 install है तो सीधे update हो जाएगा। पहला test (debug) version है तो **पहले उसे uninstall करें**।
 2. Tab पर APK खोलें → "Install unknown apps" की permission दें → Install।
 3. App खोलें → Notification permission **Allow** करें।
 4. **Settings → Samsung setup** checklist पूरी करें, खासकर:
-   - Battery → **Unrestricted** और *Never sleeping apps* में NetPulse
+   - Battery → **Unrestricted** और *Never sleeping apps* में Netpulse
    - Settings › Notifications › Advanced settings › **Show notification icons → All**
    - **Usage access** (Data usage screen के लिए)
+   - Status bar icons वाली setting करने के बाद checklist में **Mark as done** दबाएँ
 5. Settings › Extras से Quick Settings tile और Home widget जोड़ें।
+6. Settings › Appearance में Auto / Light / Dark चुनें।
 
 ## Build (developer)
 

@@ -10,6 +10,8 @@ import com.netpulse.app.data.IconStyle
 import com.netpulse.app.data.MeterSettings
 import com.netpulse.app.data.NetworkType
 import com.netpulse.app.data.SpeedTestResult
+import com.netpulse.app.data.SpeedUnit
+import com.netpulse.app.data.ThemeMode
 import com.netpulse.app.data.SpeedTester
 import com.netpulse.app.data.TestPhase
 import com.netpulse.app.data.TestProgress
@@ -122,6 +124,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setAlerts(value: Boolean) = viewModelScope.launch { app.settings.setAlertsEnabled(value) }
     fun setDailyLimitMb(value: Int) = viewModelScope.launch { app.settings.setDailyLimitMb(value) }
     fun setMonthlyLimitMb(value: Int) = viewModelScope.launch { app.settings.setMonthlyMobileLimitMb(value) }
+    fun setUnit(value: SpeedUnit) = viewModelScope.launch { app.settings.setUnit(value) }
+    fun setRefreshSeconds(value: Int) = viewModelScope.launch { app.settings.setRefreshSeconds(value) }
+    fun setThemeMode(value: ThemeMode) = viewModelScope.launch { app.settings.setThemeMode(value) }
+    fun setStatusIconsConfirmed(value: Boolean) = viewModelScope.launch { app.settings.setStatusIconsConfirmed(value) }
     fun setBillingDay(value: Int) = viewModelScope.launch {
         app.settings.setBillingDay(value)
         refreshToday()

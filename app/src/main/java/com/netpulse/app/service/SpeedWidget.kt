@@ -42,7 +42,7 @@ object SpeedWidget {
             setTextViewText(R.id.widget_up, SpeedFormat.detailed(upBps).toString())
             setTextViewText(
                 R.id.widget_today,
-                todayBytes?.let { "Today ${SpeedFormat.bytes(it)}" } ?: "NetPulse",
+                todayBytes?.let { "Today ${SpeedFormat.bytes(it)}" } ?: context.getString(R.string.app_name),
             )
             setTextViewText(R.id.widget_network, network.label())
             setOnClickPendingIntent(

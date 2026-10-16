@@ -7,6 +7,7 @@ import android.provider.Settings
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.netpulse.app.MainActivity
+import com.netpulse.app.R
 import com.netpulse.app.NetPulseApp
 import com.netpulse.app.data.SpeedFormat
 import kotlinx.coroutines.CoroutineScope
@@ -29,7 +30,7 @@ class SpeedTileService : TileService() {
                 combine(app.speed.current, app.settings.settings) { sample, settings -> sample to settings }
                     .collect { (sample, settings) ->
                         val tile = qsTile ?: return@collect
-                        tile.label = "NetPulse"
+                        tile.label = getString(R.string.tile_label)
                         val speed = SpeedFormat.detailed((sample?.downBps ?: 0) + (sample?.upBps ?: 0)).toString()
                         if (Build.VERSION.SDK_INT >= 29) {
                             tile.subtitle = if (settings.bubbleEnabled) "Bubble on · $speed" else speed

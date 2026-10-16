@@ -1,5 +1,14 @@
 <resources>
-    <color name="background">#FF080B17</color>
+    <color name="background">#FFEEF1F8</color>
     <color name="launcher_bg">#FF0B1020</color>
     <color name="accent">#FF0A84FF</color>
+
+    <!-- Home screen widget (light) -->
+    <color name="widget_bg_start">#E6FFFFFF</color>
+    <color name="widget_bg_end">#CCF1F4FB</color>
+    <color name="widget_stroke">#1F0B0D1A</color>
+    <color name="widget_text">#FF0B0D1A</color>
+    <color name="widget_text_secondary">#A60B0D1A</color>
+    <color name="widget_down">#FF0A62C9</color>
+    <color name="widget_up">#FFB85C00</color>
 </resources>

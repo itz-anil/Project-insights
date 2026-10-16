@@ -1,0 +1,12 @@
+<resources>
+    <color name="background">#FF080B17</color>
+
+    <!-- Home screen widget (dark) -->
+    <color name="widget_bg_start">#CC1A2140</color>
+    <color name="widget_bg_end">#CC0E1120</color>
+    <color name="widget_stroke">#38FFFFFF</color>
+    <color name="widget_text">#E6FFFFFF</color>
+    <color name="widget_text_secondary">#B3FFFFFF</color>
+    <color name="widget_down">#FF6CB8FF</color>
+    <color name="widget_up">#FFFFB340</color>
+</resources>

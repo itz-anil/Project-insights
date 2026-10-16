@@ -134,13 +134,14 @@ private fun Gauge(bps: Long, color: Color, modifier: Modifier) {
     val mb = bps / 1_000_000.0
     val target = min(1.0, ln(1 + mb) / ln(1 + 100.0)).toFloat()
     val fraction by animateFloatAsState(target, tween(300), label = "gauge")
+    val track = Palette.FillStrong
     Canvas(modifier.semantics { contentDescription = "Speed gauge" }) {
         val stroke = 20.dp.toPx()
         // A 240° arc is 0.75 × its diameter tall, so size it to fit the height.
         val diameter = min(size.width - stroke, (size.height - stroke) / 0.75f)
         val topLeft = Offset((size.width - diameter) / 2, stroke / 2)
         val arcSize = Size(diameter, diameter)
-        drawArc(Color(0x24FFFFFF), 150f, 240f, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+        drawArc(track, 150f, 240f, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
         if (fraction > 0.001f) {
             drawArc(color, 150f, 240f * fraction, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
         }

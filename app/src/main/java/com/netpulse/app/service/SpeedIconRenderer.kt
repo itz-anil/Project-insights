@@ -11,6 +11,7 @@ import androidx.core.graphics.createBitmap
 import com.netpulse.app.R
 import com.netpulse.app.data.IconStyle
 import com.netpulse.app.data.SpeedFormat
+import com.netpulse.app.data.SpeedUnit
 import kotlin.math.roundToInt
 
 /**
@@ -28,16 +29,16 @@ class SpeedIconRenderer(context: Context, sizeDp: Int = 24) {
         fontVariationSettings = "'wght' 800"
     }
 
-    fun render(style: IconStyle, downBps: Long, upBps: Long): Bitmap {
+    fun render(style: IconStyle, downBps: Long, upBps: Long, unit: SpeedUnit = SpeedFormat.unit): Bitmap {
         val bitmap = createBitmap(sizePx, sizePx)
         val canvas = Canvas(bitmap)
         val s = sizePx.toFloat()
         when (style) {
-            IconStyle.TOTAL -> valueAndUnit(canvas, s, SpeedFormat.compact(downBps + upBps), "")
-            IconStyle.DOWNLOAD -> valueAndUnit(canvas, s, SpeedFormat.compact(downBps), "↓")
+            IconStyle.TOTAL -> valueAndUnit(canvas, s, SpeedFormat.compact(downBps + upBps, unit), "")
+            IconStyle.DOWNLOAD -> valueAndUnit(canvas, s, SpeedFormat.compact(downBps, unit), "↓")
             IconStyle.BOTH -> {
-                drawFitted(canvas, "↓" + SpeedFormat.compact(downBps).value, s * 0.27f, s * 0.46f, s)
-                drawFitted(canvas, "↑" + SpeedFormat.compact(upBps).value, s * 0.75f, s * 0.46f, s)
+                drawFitted(canvas, "↓" + SpeedFormat.compact(downBps, unit).value, s * 0.27f, s * 0.46f, s)
+                drawFitted(canvas, "↑" + SpeedFormat.compact(upBps, unit).value, s * 0.75f, s * 0.46f, s)
             }
         }
         return bitmap

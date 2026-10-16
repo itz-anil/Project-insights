@@ -24,8 +24,10 @@ fun LiveGraph(samples: List<SpeedSample>, modifier: Modifier = Modifier) {
     // Never scale below 100 KB/s so an idle connection reads as a flat line, not noise.
     val scale = maxOf(peak * 1.15f, 100_000f)
 
-    Canvas(modifier.semantics { contentDescription = "Download and upload speed, last 60 seconds" }) {
-        val grid = Color(0x1AFFFFFF)
+    val grid = Palette.Hairline
+    val downColor = Palette.Download
+    val upColor = Palette.Upload
+    Canvas(modifier.semantics { contentDescription = "Download and upload speed graph" }) {
         for (i in 1..3) {
             val y = size.height * i / 4f
             drawLine(grid, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
@@ -51,8 +53,8 @@ fun LiveGraph(samples: List<SpeedSample>, modifier: Modifier = Modifier) {
         }
         val stroke = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
 
-        drawPath(area, Brush.verticalGradient(listOf(Palette.Download.copy(alpha = 0.28f), Color.Transparent)))
-        drawPath(down, Palette.Download, style = stroke)
-        drawPath(up, Palette.Upload, style = stroke)
+        drawPath(area, Brush.verticalGradient(listOf(downColor.copy(alpha = 0.28f), Color.Transparent)))
+        drawPath(down, downColor, style = stroke)
+        drawPath(up, upColor, style = stroke)
     }
 }
