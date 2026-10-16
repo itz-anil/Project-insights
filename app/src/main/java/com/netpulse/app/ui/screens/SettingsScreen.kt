@@ -1,6 +1,17 @@
 package com.netpulse.app.ui.screens
 
 import android.Manifest
+import android.app.StatusBarManager
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
+import android.widget.Toast
+import androidx.compose.foundation.layout.PaddingValues
+import com.netpulse.app.NetPulseApp
+import com.netpulse.app.R
+import com.netpulse.app.service.SpeedTileService
+import com.netpulse.app.service.SpeedWidgetProvider
+import com.netpulse.app.ui.components.PillButton
+import com.netpulse.app.ui.components.Stepper
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -62,18 +73,29 @@ fun SettingsScreen(
     onShowDetails: (Boolean) -> Unit,
     onPauseWhenScreenOff: (Boolean) -> Unit,
     onStartOnBoot: (Boolean) -> Unit,
+    onBubble: (Boolean) -> Unit,
+    onAlerts: (Boolean) -> Unit,
+    onDailyLimit: (Int) -> Unit,
+    onMonthlyLimit: (Int) -> Unit,
+    onBillingDay: (Int) -> Unit,
     onRequestNotifications: () -> Unit,
 ) {
+    val context = LocalContext.current
     val left: @Composable (Modifier) -> Unit = { m ->
         Column(m, verticalArrangement = Arrangement.spacedBy(16.dp)) {
             StatusBarCard(settings.iconStyle, onIconStyle)
-            GlassCard(contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp), verticalSpacing = 0.dp) {
+            GlassCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp), verticalSpacing = 0.dp) {
                 ToggleRow("Notification panel details", "Optional · ↓/↑ speed and session data in the panel", settings.showDetails, onShowDetails)
                 HorizontalDivider(color = Color(0x1FFFFFFF))
                 ToggleRow("Pause when screen is off", "Saves battery on the Tab A9", settings.pauseWhenScreenOff, onPauseWhenScreenOff)
                 HorizontalDivider(color = Color(0x1FFFFFFF))
                 ToggleRow("Start on boot", "Meter starts automatically after a restart", settings.startOnBoot, onStartOnBoot)
             }
+            ExtrasCard(settings.bubbleEnabled, onBubble = { on ->
+                if (on && !Settings.canDrawOverlays(context)) openOverlaySettings(context)
+                onBubble(on)
+            })
+            AlertsCard(settings, onAlerts, onDailyLimit, onMonthlyLimit, onBillingDay)
         }
     }
 
@@ -83,7 +105,7 @@ fun SettingsScreen(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             left(Modifier.weight(1f))
-            SamsungChecklist(onRequestNotifications, Modifier.width(400.dp))
+            SamsungChecklist(settings.bubbleEnabled, onRequestNotifications, Modifier.width(400.dp))
         }
     } else {
         Column(
@@ -91,7 +113,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             left(Modifier.fillMaxWidth())
-            SamsungChecklist(onRequestNotifications, Modifier.fillMaxWidth())
+            SamsungChecklist(settings.bubbleEnabled, onRequestNotifications, Modifier.fillMaxWidth())
         }
     }
 }
@@ -174,13 +196,15 @@ private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChang
 }
 
 @Composable
-private fun SamsungChecklist(onRequestNotifications: () -> Unit, modifier: Modifier) {
+private fun SamsungChecklist(bubbleEnabled: Boolean, onRequestNotifications: () -> Unit, modifier: Modifier) {
     val context = LocalContext.current
     var refresh by remember { mutableIntStateOf(0) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refresh++ }
 
     val notificationsOk = remember(refresh) { notificationsAllowed(context) }
     val batteryOk = remember(refresh) { batteryUnrestricted(context) }
+    val usageOk = remember(refresh) { (context.applicationContext as NetPulseApp).usage.hasAccess() }
+    val overlayOk = remember(refresh) { Settings.canDrawOverlays(context) }
 
     GlassCard(modifier, verticalSpacing = 16.dp) {
         Text("Samsung setup", style = MaterialTheme.typography.titleLarge, color = Palette.Warn)
@@ -212,6 +236,127 @@ private fun SamsungChecklist(onRequestNotifications: () -> Unit, modifier: Modif
             action = "Open notification settings",
             onAction = { openAppNotificationSettings(context) },
         )
+        CheckItem(
+            done = usageOk,
+            title = "Usage access",
+            detail = "Needed for daily/monthly data usage, per-app usage and limit alerts.",
+            action = "Grant usage access",
+            onAction = { startSafely(context, Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
+        )
+        if (bubbleEnabled) {
+            CheckItem(
+                done = overlayOk,
+                title = "Display over other apps",
+                detail = "Needed for the floating bubble.",
+                action = "Allow",
+                onAction = { openOverlaySettings(context) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExtrasCard(bubbleEnabled: Boolean, onBubble: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    GlassCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalSpacing = 0.dp) {
+        ToggleRow("Floating bubble", "Optional · ↓/↑ speed on top of videos and games (drag to move)", bubbleEnabled, onBubble)
+        HorizontalDivider(color = Color(0x1FFFFFFF))
+        ActionRow(
+            title = "Quick Settings tile",
+            subtitle = "Live speed in the notification shade; tap it to toggle the bubble",
+            action = "Add tile",
+            onAction = { requestTile(context) },
+        )
+        HorizontalDivider(color = Color(0x1FFFFFFF))
+        ActionRow(
+            title = "Home screen widget",
+            subtitle = "4×2 glass widget with download, upload and today's usage",
+            action = "Add widget",
+            onAction = { requestWidget(context) },
+        )
+    }
+}
+
+@Composable
+private fun ActionRow(title: String, subtitle: String, action: String, onAction: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 68.dp).padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = Palette.TextSecondary)
+        }
+        PillButton(action, onAction, primary = false)
+    }
+}
+
+@Composable
+private fun AlertsCard(
+    settings: MeterSettings,
+    onAlerts: (Boolean) -> Unit,
+    onDailyLimit: (Int) -> Unit,
+    onMonthlyLimit: (Int) -> Unit,
+    onBillingDay: (Int) -> Unit,
+) {
+    GlassCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp), verticalSpacing = 0.dp) {
+        ToggleRow("Data limit alerts", "Notify when a limit is reached (needs Usage access)", settings.alertsEnabled, onAlerts)
+        HorizontalDivider(color = Color(0x1FFFFFFF))
+        Stepper(
+            label = "Daily limit · all networks",
+            value = limitLabel(settings.dailyLimitMb),
+            onMinus = { onDailyLimit((settings.dailyLimitMb - 500).coerceAtLeast(0)) },
+            onPlus = { onDailyLimit(settings.dailyLimitMb + 500) },
+        )
+        Stepper(
+            label = "Monthly limit · mobile",
+            value = limitLabel(settings.monthlyMobileLimitMb),
+            onMinus = { onMonthlyLimit((settings.monthlyMobileLimitMb - 1_000).coerceAtLeast(0)) },
+            onPlus = { onMonthlyLimit(settings.monthlyMobileLimitMb + 1_000) },
+        )
+        Stepper(
+            label = "Billing cycle starts on day",
+            value = settings.billingDay.toString(),
+            onMinus = { onBillingDay(if (settings.billingDay <= 1) 28 else settings.billingDay - 1) },
+            onPlus = { onBillingDay(if (settings.billingDay >= 28) 1 else settings.billingDay + 1) },
+        )
+    }
+}
+
+private fun limitLabel(mb: Int): String =
+    if (mb <= 0) "Off" else String.format(java.util.Locale.US, if (mb % 1000 == 0) "%.0f GB" else "%.1f GB", mb / 1000.0)
+
+private fun openOverlaySettings(context: Context) {
+    startSafely(
+        context,
+        Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, "package:${context.packageName}".toUri()),
+    )
+}
+
+private fun requestTile(context: Context) {
+    if (Build.VERSION.SDK_INT >= 33) {
+        val sbm = context.getSystemService(StatusBarManager::class.java)
+        runCatching {
+            sbm.requestAddTileService(
+                ComponentName(context, SpeedTileService::class.java),
+                context.getString(R.string.tile_label),
+                android.graphics.drawable.Icon.createWithResource(context, R.drawable.ic_stat_pulse),
+                context.mainExecutor,
+            ) { }
+        }
+    } else {
+        Toast.makeText(context, "Pull down Quick Settings › Edit (pencil) › drag NetPulse in", Toast.LENGTH_LONG).show()
+    }
+}
+
+private fun requestWidget(context: Context) {
+    val manager = AppWidgetManager.getInstance(context)
+    val ok = manager.isRequestPinAppWidgetSupported &&
+        runCatching { manager.requestPinAppWidget(ComponentName(context, SpeedWidgetProvider::class.java), null, null) }
+            .getOrDefault(false)
+    if (!ok) {
+        Toast.makeText(context, "Long-press the home screen › Widgets › NetPulse", Toast.LENGTH_LONG).show()
     }
 }
 

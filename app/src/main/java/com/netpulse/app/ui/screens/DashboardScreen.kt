@@ -29,6 +29,8 @@ import com.netpulse.app.data.NetworkType
 import com.netpulse.app.data.SessionTotals
 import com.netpulse.app.data.SpeedFormat
 import com.netpulse.app.data.SpeedSample
+import com.netpulse.app.data.SpeedTestResult
+import com.netpulse.app.data.TodayUsage
 import com.netpulse.app.service.label
 import com.netpulse.app.ui.components.GlassCard
 import com.netpulse.app.ui.components.LiveGraph
@@ -40,16 +42,22 @@ fun DashboardScreen(
     history: List<SpeedSample>,
     session: SessionTotals,
     connection: ConnectionInfo,
+    today: TodayUsage?,
+    lastTest: SpeedTestResult?,
     wide: Boolean,
 ) {
     val down = SpeedFormat.detailed(current?.downBps ?: 0)
     val up = SpeedFormat.detailed(current?.upBps ?: 0)
-    val sessionTotal = SpeedFormat.bytes(session.downBytes + session.upBytes)
+    // System numbers (needs Usage access) are more complete than what the meter saw itself.
+    val usedLabel = if (today != null) "Used today" else "This session"
+    val used = SpeedFormat.bytes(today?.today ?: (session.downBytes + session.upBytes))
+    val ping = SpeedFormat.Parts(lastTest?.pingMs?.toString() ?: "—", "ms")
 
     val stats: @Composable (Modifier) -> Unit = { m ->
         StatCard("Download", down, Palette.Download, m)
         StatCard("Upload", up, Palette.Upload, m)
-        StatCard("This session", sessionTotal, Palette.TextPrimary, m)
+        StatCard(usedLabel, used, Palette.TextPrimary, m)
+        StatCard("Ping · last test", ping, Palette.TextPrimary, m)
     }
 
     if (wide) {
@@ -69,7 +77,10 @@ fun DashboardScreen(
                 StatCard("Download", down, Palette.Download, Modifier.weight(1f))
                 StatCard("Upload", up, Palette.Upload, Modifier.weight(1f))
             }
-            StatCard("This session", sessionTotal, Palette.TextPrimary, Modifier.fillMaxWidth())
+            Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                StatCard(usedLabel, used, Palette.TextPrimary, Modifier.weight(1f))
+                StatCard("Ping · last test", ping, Palette.TextPrimary, Modifier.weight(1f))
+            }
             GraphCard(history, Modifier.fillMaxWidth().height(300.dp))
             ConnectionCard(connection, Modifier.fillMaxWidth())
         }

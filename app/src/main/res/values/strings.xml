@@ -2,4 +2,9 @@
     <string name="app_name">NetPulse</string>
     <string name="channel_meter_name">Live speed meter</string>
     <string name="channel_meter_desc">Shows the current network speed in the status bar.</string>
+    <string name="widget_description">Live download and upload speed</string>
+    <string name="widget_download">Download</string>
+    <string name="widget_upload">Upload</string>
+    <string name="widget_zero">0 KB/s</string>
+    <string name="tile_label">NetPulse</string>
 </resources>

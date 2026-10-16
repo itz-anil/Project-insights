@@ -13,6 +13,7 @@ import com.netpulse.app.R
 import com.netpulse.app.data.NetworkType
 import com.netpulse.app.data.SessionTotals
 import com.netpulse.app.data.SpeedFormat
+import com.netpulse.app.data.TodayUsage
 
 class MeterNotifications(private val context: Context) {
 
@@ -50,15 +51,19 @@ class MeterNotifications(private val context: Context) {
         upBps: Long,
         network: NetworkType,
         session: SessionTotals,
+        today: TodayUsage?,
         showDetails: Boolean,
     ) = base().setSmallIcon(IconCompat.createWithBitmap(icon)).apply {
         if (showDetails) {
             val down = SpeedFormat.detailed(downBps)
             val up = SpeedFormat.detailed(upBps)
             setContentTitle("↓ $down    ↑ $up")
-            setContentText(
-                "${network.label()} · Session ↓ ${SpeedFormat.bytes(session.downBytes)}  ↑ ${SpeedFormat.bytes(session.upBytes)}"
-            )
+            val usage = if (today != null) {
+                "Today · Wi-Fi ${SpeedFormat.bytes(today.wifi)} · Mobile ${SpeedFormat.bytes(today.mobile)}"
+            } else {
+                "Session ↓ ${SpeedFormat.bytes(session.downBytes)}  ↑ ${SpeedFormat.bytes(session.upBytes)}"
+            }
+            setContentText("${network.label()} · $usage")
         } else {
             setContentTitle("${context.getString(R.string.app_name)} · ${SpeedFormat.detailed(downBps + upBps)}")
         }

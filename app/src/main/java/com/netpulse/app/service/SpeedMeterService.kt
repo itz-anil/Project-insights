@@ -7,7 +7,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.util.Log
@@ -28,16 +30,21 @@ import kotlinx.coroutines.launch
 /**
  * The core of the app: a foreground service that measures speed every second
  * and redraws the status bar icon. It is always on (the status bar meter is mandatory).
+ * It also drives the optional floating bubble, the home screen widget and data alerts.
  */
 class SpeedMeterService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val main = Handler(Looper.getMainLooper())
     private val app get() = application as NetPulseApp
 
     private lateinit var notifications: MeterNotifications
     private lateinit var renderer: SpeedIconRenderer
     private lateinit var connection: ConnectionReader
+    private lateinit var bubble: FloatingBubble
+    private lateinit var alerts: DataAlerts
     private val sampler = TrafficSampler()
+    private var tick = 0L
 
     @Volatile private var settings = MeterSettings()
     @Volatile private var screenOn = true
@@ -61,6 +68,8 @@ class SpeedMeterService : Service() {
         notifications = MeterNotifications(this).also { it.ensureChannel() }
         renderer = SpeedIconRenderer(this)
         connection = ConnectionReader(this)
+        bubble = FloatingBubble(this)
+        alerts = DataAlerts(this, app.settings).also { it.ensureChannel() }
 
         if (!goForeground()) return
 
@@ -76,8 +85,14 @@ class SpeedMeterService : Service() {
         )
 
         app.speed.setRunning(true)
-        scope.launch { app.settings.settings.collectLatest { settings = it } }
+        scope.launch {
+            app.settings.settings.collectLatest {
+                settings = it
+                if (!it.bubbleEnabled) main.post { bubble.hide() }
+            }
+        }
         scope.launch { meterLoop() }
+        scope.launch { usageLoop() }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
@@ -85,6 +100,7 @@ class SpeedMeterService : Service() {
     override fun onDestroy() {
         scope.cancel()
         runCatching { unregisterReceiver(screenReceiver) }
+        main.post { bubble.hide() }
         app.speed.setRunning(false)
         super.onDestroy()
     }
@@ -121,12 +137,24 @@ class SpeedMeterService : Service() {
         }
     }
 
+    /** System usage numbers change slowly; refresh them once a minute and check limits. */
+    private suspend fun usageLoop() {
+        while (scope.isActive) {
+            val current = settings
+            val today = runCatching { app.usage.refreshToday(current.billingDay) }.getOrNull()
+            if (today != null) runCatching { alerts.check(today, current) }
+            delay(USAGE_INTERVAL_MS)
+        }
+    }
+
     private fun publish(reading: TrafficSampler.Reading, current: MeterSettings) {
+        tick++
         val network = connection.currentType()
         val sample = SpeedSample(reading.downBps, reading.upBps, network, System.currentTimeMillis())
         app.speed.publish(sample, reading.elapsedMs)
 
         val icon = renderer.render(current.iconStyle, reading.downBps, reading.upBps)
+        val today = app.usage.today.value
         notifications.notify(
             notifications.build(
                 icon = icon,
@@ -134,14 +162,24 @@ class SpeedMeterService : Service() {
                 upBps = reading.upBps,
                 network = network,
                 session = app.speed.session.value,
+                today = today,
                 showDetails = current.showDetails,
             )
         )
+
+        if (current.bubbleEnabled) {
+            main.post { bubble.sync(true, reading.downBps, reading.upBps) }
+        }
+        if (tick % WIDGET_EVERY_TICKS == 0L) {
+            runCatching { SpeedWidget.push(this, reading.downBps, reading.upBps, network, today?.today) }
+        }
     }
 
     companion object {
         private const val TAG = "SpeedMeterService"
         private const val INTERVAL_MS = 1_000L
+        private const val USAGE_INTERVAL_MS = 60_000L
+        private const val WIDGET_EVERY_TICKS = 2L
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(

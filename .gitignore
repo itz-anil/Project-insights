@@ -9,3 +9,7 @@ captures/
 .cxx/
 *.apk
 *.aab
+
+# Release signing key (kept out of git; back it up)
+signing/
+keystore.properties

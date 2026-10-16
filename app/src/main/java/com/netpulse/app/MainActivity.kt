@@ -34,7 +34,10 @@ import com.netpulse.app.ui.MainViewModel
 import com.netpulse.app.ui.components.Chip
 import com.netpulse.app.ui.components.GlassBackground
 import com.netpulse.app.ui.components.PillTabs
-import com.netpulse.app.ui.screens.ComingSoonScreen
+import com.netpulse.app.ui.screens.SpeedTestScreen
+import com.netpulse.app.ui.screens.UsageScreen
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.netpulse.app.ui.screens.DashboardScreen
 import com.netpulse.app.ui.screens.SettingsScreen
 import com.netpulse.app.ui.theme.NetPulseTheme
@@ -54,19 +57,35 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         SpeedMeterService.start(this)
-        setContent { NetPulseTheme { NetPulseRoot(vm) } }
+        val startTab = if (intent?.getBooleanExtra(EXTRA_OPEN_SETTINGS, false) == true) Tab.SETTINGS else Tab.DASHBOARD
+        setContent { NetPulseTheme { NetPulseRoot(vm, startTab) } }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_SETTINGS = "open_settings"
     }
 }
 
 @Composable
-private fun NetPulseRoot(vm: MainViewModel) {
+private fun NetPulseRoot(vm: MainViewModel, startTab: Tab) {
     val current by vm.current.collectAsStateWithLifecycle()
     val history by vm.history.collectAsStateWithLifecycle()
     val session by vm.session.collectAsStateWithLifecycle()
     val running by vm.running.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
     val connection by vm.connection.collectAsStateWithLifecycle()
-    var tab by rememberSaveable { mutableStateOf(Tab.DASHBOARD) }
+    val today by vm.today.collectAsStateWithLifecycle()
+    val usage by vm.usage.collectAsStateWithLifecycle()
+    val test by vm.test.collectAsStateWithLifecycle()
+    val testHistory by vm.testHistory.collectAsStateWithLifecycle()
+    var tab by rememberSaveable { mutableStateOf(startTab) }
+
+    // Re-read system usage when returning to the app (e.g. after granting Usage access).
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+        vm.refreshToday()
+        if (tab == Tab.USAGE) vm.refreshUsage()
+    }
+    LaunchedEffect(tab) { if (tab == Tab.USAGE) vm.refreshUsage() }
 
     val notificationPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -104,22 +123,15 @@ private fun NetPulseRoot(vm: MainViewModel) {
                 }
 
                 when (tab) {
-                    Tab.DASHBOARD -> DashboardScreen(current, history, session, connection, wide)
-                    Tab.USAGE -> ComingSoonScreen(
-                        "Data usage",
-                        listOf(
-                            "Daily, weekly and monthly Wi-Fi vs mobile data",
-                            "Per-app usage (needs Usage access)",
-                            "Mobile data limit with alerts",
-                        ),
-                    )
-                    Tab.SPEED_TEST -> ComingSoonScreen(
-                        "Speed test",
-                        listOf(
-                            "Download, upload, ping and jitter",
-                            "History of past tests",
-                            "Floating bubble, Quick Settings tile and home widget",
-                        ),
+                    Tab.DASHBOARD -> DashboardScreen(current, history, session, connection, today, testHistory.firstOrNull(), wide)
+                    Tab.USAGE -> UsageScreen(usage, settings, wide)
+                    Tab.SPEED_TEST -> SpeedTestScreen(
+                        test = test,
+                        history = testHistory,
+                        wide = wide,
+                        onStart = vm::startTest,
+                        onStop = vm::stopTest,
+                        onClearHistory = { vm.clearTestHistory() },
                     )
                     Tab.SETTINGS -> SettingsScreen(
                         settings = settings,
@@ -128,6 +140,11 @@ private fun NetPulseRoot(vm: MainViewModel) {
                         onShowDetails = { vm.setShowDetails(it) },
                         onPauseWhenScreenOff = { vm.setPauseWhenScreenOff(it) },
                         onStartOnBoot = { vm.setStartOnBoot(it) },
+                        onBubble = { vm.setBubble(it) },
+                        onAlerts = { vm.setAlerts(it) },
+                        onDailyLimit = { vm.setDailyLimitMb(it) },
+                        onMonthlyLimit = { vm.setMonthlyLimitMb(it) },
+                        onBillingDay = { vm.setBillingDay(it) },
                         onRequestNotifications = requestNotifications,
                     )
                 }
