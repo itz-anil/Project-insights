@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">NetPulse</string>
+    <string name="channel_meter_name">Live speed meter</string>
+    <string name="channel_meter_desc">Shows the current network speed in the status bar.</string>
+</resources>
