@@ -188,11 +188,11 @@ private fun StatusBarCard(settings: MeterSettings, actions: SettingsActions) {
                     onSelect = actions.onUnit,
                 )
             }
-            LabeledSegment("Refresh") {
+            LabeledSegment("Status bar refresh") {
                 Segmented(
-                    items = listOf(1, 2, 3),
-                    selected = settings.refreshSeconds,
-                    label = { "${it}s" },
+                    items = listOf(500, 1_000, 2_000, 3_000),
+                    selected = settings.refreshMs,
+                    label = { if (it < 1_000) "0.5s" else "${it / 1_000}s" },
                     onSelect = actions.onRefresh,
                 )
             }
@@ -203,6 +203,13 @@ private fun StatusBarCard(settings: MeterSettings, actions: SettingsActions) {
             } else {
                 "Mbps = megabits per second (like internet plans). 1 MB/s = 8 Mbps."
             },
+            style = MaterialTheme.typography.bodyMedium,
+            color = Palette.TextTertiary,
+        )
+        Text(
+            "0.5s is the fastest Android can show in the status bar (it drops faster notification " +
+                "updates). While Netpulse is open, the app screen goes live at 10 updates per second. " +
+                "0.5s uses a bit more battery than 1s.",
             style = MaterialTheme.typography.bodyMedium,
             color = Palette.TextTertiary,
         )

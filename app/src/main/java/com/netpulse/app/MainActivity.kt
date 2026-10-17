@@ -79,6 +79,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        (application as NetPulseApp).speed.setUiVisible(true)
+    }
+
+    override fun onStop() {
+        (application as NetPulseApp).speed.setUiVisible(false)
+        super.onStop()
+    }
+
     companion object {
         const val EXTRA_OPEN_SETTINGS = "open_settings"
     }
@@ -141,7 +151,7 @@ private fun NetPulseRoot(vm: MainViewModel, startTab: Tab) {
                 }
 
                 when (tab) {
-                    Tab.DASHBOARD -> DashboardScreen(current, history, session, connection, today, testHistory.firstOrNull(), settings.refreshSeconds, wide)
+                    Tab.DASHBOARD -> DashboardScreen(current, history, session, connection, today, testHistory.firstOrNull(), wide)
                     Tab.USAGE -> UsageScreen(usage, settings, wide)
                     Tab.SPEED_TEST -> SpeedTestScreen(
                         test = test,
@@ -158,7 +168,7 @@ private fun NetPulseRoot(vm: MainViewModel, startTab: Tab) {
                             SettingsActions(
                                 onIconStyle = { vm.setIconStyle(it) },
                                 onUnit = { vm.setUnit(it) },
-                                onRefresh = { vm.setRefreshSeconds(it) },
+                                onRefresh = { vm.setRefreshMs(it) },
                                 onTheme = { vm.setThemeMode(it) },
                                 onShowDetails = { vm.setShowDetails(it) },
                                 onPauseWhenScreenOff = { vm.setPauseWhenScreenOff(it) },

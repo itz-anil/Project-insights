@@ -37,11 +37,17 @@ data class MeterSettings(
     val billingDay: Int = 1,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val unit: SpeedUnit = SpeedUnit.MBYTES,
-    /** How often the meter refreshes: 1, 2 or 3 seconds. */
-    val refreshSeconds: Int = 1,
+    /** How often the status bar refreshes, in ms: 500, 1000, 2000 or 3000. */
+    val refreshMs: Int = 1_000,
     /** The user confirmed One UI shows all status bar icons (cannot be detected). */
     val statusIconsConfirmed: Boolean = false,
 )
+
+/**
+ * Fastest status bar refresh. Android drops notification updates beyond a few per second,
+ * so anything faster than this would not show anyway.
+ */
+const val MIN_REFRESH_MS = 500
 
 class SettingsRepository(private val context: Context) {
 
@@ -58,7 +64,8 @@ class SettingsRepository(private val context: Context) {
         val alertMarks = stringPreferencesKey("alert_marks")
         val themeMode = stringPreferencesKey("theme_mode")
         val unit = stringPreferencesKey("unit")
-        val refreshSeconds = intPreferencesKey("refresh_seconds")
+        val refreshSeconds = intPreferencesKey("refresh_seconds") // v1.1–1.2
+        val refreshMs = intPreferencesKey("refresh_ms")
         val statusIconsConfirmed = booleanPreferencesKey("status_icons_confirmed")
     }
 
@@ -75,7 +82,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setBillingDay(value: Int) = edit { it[Keys.billingDay] = value.coerceIn(1, 28) }
     suspend fun setThemeMode(value: ThemeMode) = edit { it[Keys.themeMode] = value.name }
     suspend fun setUnit(value: SpeedUnit) = edit { it[Keys.unit] = value.name }
-    suspend fun setRefreshSeconds(value: Int) = edit { it[Keys.refreshSeconds] = value.coerceIn(1, 3) }
+    suspend fun setRefreshMs(value: Int) = edit { it[Keys.refreshMs] = value.coerceIn(MIN_REFRESH_MS, 3_000) }
     suspend fun setStatusIconsConfirmed(value: Boolean) = edit { it[Keys.statusIconsConfirmed] = value }
 
     /** Remembers which alerts were already shown, so each fires once. */
@@ -111,7 +118,8 @@ class SettingsRepository(private val context: Context) {
             unit = this[Keys.unit]
                 ?.let { name -> SpeedUnit.entries.firstOrNull { it.name == name } }
                 ?: d.unit,
-            refreshSeconds = (this[Keys.refreshSeconds] ?: d.refreshSeconds).coerceIn(1, 3),
+            refreshMs = (this[Keys.refreshMs] ?: this[Keys.refreshSeconds]?.times(1_000) ?: d.refreshMs)
+                .coerceIn(MIN_REFRESH_MS, 3_000),
             statusIconsConfirmed = this[Keys.statusIconsConfirmed] ?: d.statusIconsConfirmed,
         )
     }

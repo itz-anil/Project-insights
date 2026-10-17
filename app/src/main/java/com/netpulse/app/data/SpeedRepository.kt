@@ -33,14 +33,23 @@ class SpeedRepository {
     private val _running = MutableStateFlow(false)
     val running: StateFlow<Boolean> = _running.asStateFlow()
 
-    fun publish(sample: SpeedSample, elapsedMs: Long) {
+    private val _uiVisible = MutableStateFlow(false)
+    /** True while a Netpulse screen is open; the meter then samples much faster. */
+    val uiVisible: StateFlow<Boolean> = _uiVisible.asStateFlow()
+
+    fun setUiVisible(value: Boolean) {
+        _uiVisible.value = value
+    }
+
+    /**
+     * [addToHistory] is set about once a second, so the graph always spans 60 seconds
+     * no matter how fast the live value updates.
+     */
+    fun publish(sample: SpeedSample, deltaDown: Long, deltaUp: Long, addToHistory: Boolean) {
         _current.value = sample
-        _history.update { (it + sample).takeLast(HISTORY_SIZE) }
+        if (addToHistory) _history.update { (it + sample).takeLast(HISTORY_SIZE) }
         _session.update {
-            SessionTotals(
-                downBytes = it.downBytes + sample.downBps * elapsedMs / 1000,
-                upBytes = it.upBytes + sample.upBps * elapsedMs / 1000,
-            )
+            SessionTotals(downBytes = it.downBytes + deltaDown, upBytes = it.upBytes + deltaUp)
         }
     }
 

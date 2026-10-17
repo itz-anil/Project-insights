@@ -125,7 +125,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setDailyLimitMb(value: Int) = viewModelScope.launch { app.settings.setDailyLimitMb(value) }
     fun setMonthlyLimitMb(value: Int) = viewModelScope.launch { app.settings.setMonthlyMobileLimitMb(value) }
     fun setUnit(value: SpeedUnit) = viewModelScope.launch { app.settings.setUnit(value) }
-    fun setRefreshSeconds(value: Int) = viewModelScope.launch { app.settings.setRefreshSeconds(value) }
+    fun setRefreshMs(value: Int) = viewModelScope.launch { app.settings.setRefreshMs(value) }
     fun setThemeMode(value: ThemeMode) = viewModelScope.launch { app.settings.setThemeMode(value) }
     fun setStatusIconsConfirmed(value: Boolean) = viewModelScope.launch { app.settings.setStatusIconsConfirmed(value) }
     fun setBillingDay(value: Int) = viewModelScope.launch {

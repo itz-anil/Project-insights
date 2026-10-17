@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * The core of the app: a foreground service that measures speed and redraws the
@@ -62,6 +63,8 @@ class SpeedMeterService : Service() {
     private var lastBubbleKey: String? = null
     private var lastWidgetKey: String? = null
     private var lastWidgetAt = 0L
+    private var lastHistoryAt = 0L
+    private var lastStatusAt = 0L
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -150,9 +153,23 @@ class SpeedMeterService : Service() {
                 lastNotificationKey = null
                 nextTick = SystemClock.elapsedRealtime()
             }
-            nextTick += settings.value.refreshSeconds * 1_000L
+            val refresh = settings.value.refreshMs.toLong()
+            // Fast "live" ticks only while the app is on screen; otherwise just the status bar rate.
+            val tick = if (app.speed.uiVisible.value && screenOn.value) LIVE_TICK_MS else refresh
+            sampler.window.windowMs = maxOf(WINDOW_MS, refresh)
+            nextTick += tick
             val wait = nextTick - SystemClock.elapsedRealtime()
-            if (wait > 0) delay(wait) else nextTick = SystemClock.elapsedRealtime()
+            if (wait > 0) {
+                if (tick == LIVE_TICK_MS) {
+                    delay(wait)
+                } else {
+                    // Switch to live ticks right away if the app is opened mid-wait.
+                    val opened = withTimeoutOrNull(wait) { app.speed.uiVisible.first { it } }
+                    if (opened != null) nextTick = SystemClock.elapsedRealtime()
+                }
+            } else {
+                nextTick = SystemClock.elapsedRealtime()
+            }
             sampler.sample()?.let { publish(it, settings.value) }
         }
     }
@@ -172,9 +189,21 @@ class SpeedMeterService : Service() {
         }
     }
 
-    private fun publish(reading: TrafficSampler.Reading, current: MeterSettings) {
+    private fun publish(reading: RateWindow.Reading, current: MeterSettings) {
         val type = network.type
-        app.speed.publish(SpeedSample(reading.downBps, reading.upBps, type, System.currentTimeMillis()), reading.elapsedMs)
+        val now = SystemClock.elapsedRealtime()
+        val toHistory = now - lastHistoryAt >= 1_000 - LIVE_TICK_MS / 2
+        if (toHistory) lastHistoryAt = now
+        app.speed.publish(
+            SpeedSample(reading.downBps, reading.upBps, type, System.currentTimeMillis()),
+            reading.deltaDown,
+            reading.deltaUp,
+            toHistory,
+        )
+
+        // The status bar keeps its own pace; Android drops notification updates beyond a few per second.
+        if (now - lastStatusAt < current.refreshMs - LIVE_TICK_MS / 2) return
+        lastStatusAt = now
 
         val down = SpeedFormat.compact(reading.downBps, current.unit)
         val up = SpeedFormat.compact(reading.upBps, current.unit)
@@ -218,7 +247,6 @@ class SpeedMeterService : Service() {
             lastBubbleKey = null
         }
 
-        val now = SystemClock.elapsedRealtime()
         val widgetKey = "${SpeedFormat.detailed(reading.downBps)}|${SpeedFormat.detailed(reading.upBps)}|$type|${today?.today}"
         if (widgetKey != lastWidgetKey && now - lastWidgetAt >= WIDGET_MIN_INTERVAL_MS) {
             lastWidgetKey = widgetKey
@@ -231,6 +259,10 @@ class SpeedMeterService : Service() {
         private const val TAG = "SpeedMeterService"
         private const val USAGE_INTERVAL_MS = 5 * 60_000L
         private const val WIDGET_MIN_INTERVAL_MS = 3_000L
+        /** Sampling step while the app is open: 10 updates per second. */
+        private const val LIVE_TICK_MS = 100L
+        /** Speeds are averaged over at least this long, so fast ticks stay accurate. */
+        private const val WINDOW_MS = 1_000L
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(

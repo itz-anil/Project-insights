@@ -45,10 +45,9 @@ fun DashboardScreen(
     connection: ConnectionInfo,
     today: TodayUsage?,
     lastTest: SpeedTestResult?,
-    refreshSeconds: Int,
     wide: Boolean,
 ) {
-    val graphTitle = "Last ${SpeedRepository.HISTORY_SIZE * refreshSeconds} seconds"
+    val graphTitle = "Last ${SpeedRepository.HISTORY_SIZE} seconds"
     val down = SpeedFormat.detailed(current?.downBps ?: 0)
     val up = SpeedFormat.detailed(current?.upBps ?: 0)
     // System numbers (needs Usage access) are more complete than what the meter saw itself.

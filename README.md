@@ -2,7 +2,7 @@
 
 Status bar में live network speed (MB/s) दिखाने वाला Android app, iPhone जैसे glassy look के साथ।
 
-## Features (v1.2.0) ✅
+## Features (v1.3.0) ✅
 
 | Feature | विवरण |
 |---|---|
@@ -18,7 +18,7 @@ Status bar में live network speed (MB/s) दिखाने वाला A
 | Battery बचत | Screen off पर meter पूरी तरह सो जाता है; notification/widget/bubble सिर्फ़ तब update होते हैं जब number बदले; network type callback से |
 | Samsung setup checklist | Notification, battery, status bar icons, usage access, overlay |
 | **Light / Dark mode** | Auto (tablet की setting के साथ बदलता है), या हमेशा Light / Dark; widget भी साथ बदलता है |
-| Unit और refresh | MB/s या Mbps; हर 1, 2 या 3 second पर update |
+| Unit और refresh | MB/s या Mbps; status bar हर 0.5, 1, 2 या 3 second पर; app खुला हो तो 10 बार/second live |
 | UI | Glass look, Plus Jakarta Sans (text) + JetBrains Mono (numbers), tablet के लिए wide layout |
 
 ## Permissions क्यों चाहिए
@@ -32,8 +32,8 @@ Status bar में live network speed (MB/s) दिखाने वाला A
 
 ## Tab पर install कैसे करें
 
-1. `Netpulse-v1.2.0.apk` (signed release) Tab पर copy करें।
-   v1.0.0 या v1.1.0 install है तो सीधे update हो जाएगा। पहला test (debug) version है तो **पहले उसे uninstall करें**।
+1. `Netpulse-v1.3.0.apk` (signed release) Tab पर copy करें।
+   पुराना v1.x install है तो सीधे update हो जाएगा। पहला test (debug) version है तो **पहले उसे uninstall करें**।
 2. Tab पर APK खोलें → "Install unknown apps" की permission दें → Install।
 3. App खोलें → Notification permission **Allow** करें।
 4. **Settings → Samsung setup** checklist पूरी करें, खासकर:
