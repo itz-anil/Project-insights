@@ -16,6 +16,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import com.netpulse.app.NetPulseApp
 import com.netpulse.app.data.MeterSettings
+import com.netpulse.app.data.NetworkType
 import com.netpulse.app.data.SpeedFormat
 import com.netpulse.app.data.SpeedSample
 import kotlinx.coroutines.CoroutineScope
@@ -65,6 +66,7 @@ class SpeedMeterService : Service() {
     private var lastWidgetAt = 0L
     private var lastHistoryAt = 0L
     private var lastStatusAt = 0L
+    @Volatile private var idle = false
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -145,33 +147,67 @@ class SpeedMeterService : Service() {
         sampler.sample() // baseline
         var nextTick = SystemClock.elapsedRealtime()
         while (scope.isActive) {
-            if (!(screenOn.value || !settings.value.pauseWhenScreenOff)) {
-                // Sleep with no timers at all until the screen is back on.
-                combine(screenOn, settings) { on, s -> on || !s.pauseWhenScreenOff }.first { it }
+            val s = settings.value
+            val offline = s.onlyWhenConnected && network.type.value == NetworkType.NONE
+            val screenPaused = !screenOn.value && s.pauseWhenScreenOff
+            if (offline || screenPaused) {
+                if (offline) {
+                    // Switching Wi-Fi ↔ mobile drops the connection for a moment; don't flicker.
+                    val back = if (screenPaused) null
+                    else withTimeoutOrNull(OFFLINE_GRACE_MS) { network.type.first { it != NetworkType.NONE } }
+                    if (back != null) continue
+                    goIdle()
+                }
+                // Sleep with no timers until the screen is on and a network is back.
+                combine(screenOn, settings, network.type) { on, st, type ->
+                    (on || !st.pauseWhenScreenOff) && (type != NetworkType.NONE || !st.onlyWhenConnected)
+                }.first { it }
+                idle = false
                 sampler.reset()
                 sampler.sample()
                 lastNotificationKey = null
+                lastStatusAt = 0L
                 nextTick = SystemClock.elapsedRealtime()
+                continue
             }
-            val refresh = settings.value.refreshMs.toLong()
+            val refresh = s.refreshMs.toLong()
             // Fast "live" ticks only while the app is on screen; otherwise just the status bar rate.
             val tick = if (app.speed.uiVisible.value && screenOn.value) LIVE_TICK_MS else refresh
             sampler.window.windowMs = maxOf(WINDOW_MS, refresh)
             nextTick += tick
             val wait = nextTick - SystemClock.elapsedRealtime()
             if (wait > 0) {
-                if (tick == LIVE_TICK_MS) {
-                    delay(wait)
-                } else {
-                    // Switch to live ticks right away if the app is opened mid-wait.
-                    val opened = withTimeoutOrNull(wait) { app.speed.uiVisible.first { it } }
-                    if (opened != null) nextTick = SystemClock.elapsedRealtime()
+                // Wake early if the app opens or the connection drops mid-wait.
+                val changed = withTimeoutOrNull(wait) {
+                    if (tick == LIVE_TICK_MS) {
+                        network.type.first { it == NetworkType.NONE && settings.value.onlyWhenConnected }
+                    } else {
+                        combine(app.speed.uiVisible, network.type) { ui, type ->
+                            ui || (type == NetworkType.NONE && settings.value.onlyWhenConnected)
+                        }.first { it }
+                    }
+                }
+                if (changed != null) {
+                    nextTick = SystemClock.elapsedRealtime()
+                    if (network.type.value == NetworkType.NONE && settings.value.onlyWhenConnected) continue
                 }
             } else {
                 nextTick = SystemClock.elapsedRealtime()
             }
             sampler.sample()?.let { publish(it, settings.value) }
         }
+    }
+
+    /** Offline: swap to the no-icon notification, hide the bubble, show zero in the app. */
+    private fun goIdle() {
+        if (idle) return
+        idle = true
+        notifications.notify(notifications.idle())
+        lastNotificationKey = null
+        lastBubbleKey = null
+        app.speed.setOffline()
+        main.post { bubble.hide() }
+        runCatching { SpeedWidget.push(this, 0, 0, NetworkType.NONE, app.usage.today.value?.today) }
     }
 
     /**
@@ -190,7 +226,7 @@ class SpeedMeterService : Service() {
     }
 
     private fun publish(reading: RateWindow.Reading, current: MeterSettings) {
-        val type = network.type
+        val type = network.type.value
         val now = SystemClock.elapsedRealtime()
         val toHistory = now - lastHistoryAt >= 1_000 - LIVE_TICK_MS / 2
         if (toHistory) lastHistoryAt = now
@@ -263,6 +299,8 @@ class SpeedMeterService : Service() {
         private const val LIVE_TICK_MS = 100L
         /** Speeds are averaged over at least this long, so fast ticks stay accurate. */
         private const val WINDOW_MS = 1_000L
+        /** How long a connection may drop before the status bar speed is hidden. */
+        private const val OFFLINE_GRACE_MS = 3_000L
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(

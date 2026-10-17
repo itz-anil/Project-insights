@@ -2,11 +2,12 @@
 
 Status bar में live network speed (MB/s) दिखाने वाला Android app, iPhone जैसे glassy look के साथ।
 
-## Features (v1.3.0) ✅
+## Features (v1.4.0) ✅
 
 | Feature | विवरण |
 |---|---|
 | **Status bar speed** — *mandatory, हमेशा ON* | हर 1 second, MB/s (कम होने पर KB/s); style: Total / Download / Down + Up |
+| **Sirf connected होने पर** | Wi-Fi या mobile data जुड़ा हो तभी status bar में speed; दोनों बंद हों तो icon छिप जाता है और meter सो जाता है (Settings में बदल सकते हैं) |
 | Notification panel — *optional* | ↓/↑ speed + आज का Wi-Fi/Mobile data; off = एक छोटी silent line |
 | Dashboard | Live speed, 60-second graph, आज का usage, last ping, Wi-Fi/LTE details |
 | **Data usage** | Billing cycle का Wi-Fi vs Mobile, 14 दिन का chart, top apps (icon के साथ) |
@@ -32,7 +33,7 @@ Status bar में live network speed (MB/s) दिखाने वाला A
 
 ## Tab पर install कैसे करें
 
-1. `Netpulse-v1.3.0.apk` (signed release) Tab पर copy करें।
+1. `Netpulse-v1.4.0.apk` (signed release) Tab पर copy करें।
    पुराना v1.x install है तो सीधे update हो जाएगा। पहला test (debug) version है तो **पहले उसे uninstall करें**।
 2. Tab पर APK खोलें → "Install unknown apps" की permission दें → Install।
 3. App खोलें → Notification permission **Allow** करें।

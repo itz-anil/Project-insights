@@ -127,6 +127,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setUnit(value: SpeedUnit) = viewModelScope.launch { app.settings.setUnit(value) }
     fun setRefreshMs(value: Int) = viewModelScope.launch { app.settings.setRefreshMs(value) }
     fun setThemeMode(value: ThemeMode) = viewModelScope.launch { app.settings.setThemeMode(value) }
+    fun setOnlyWhenConnected(value: Boolean) = viewModelScope.launch { app.settings.setOnlyWhenConnected(value) }
     fun setStatusIconsConfirmed(value: Boolean) = viewModelScope.launch { app.settings.setStatusIconsConfirmed(value) }
     fun setBillingDay(value: Int) = viewModelScope.launch {
         app.settings.setBillingDay(value)

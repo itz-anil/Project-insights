@@ -87,6 +87,7 @@ class SettingsActions(
     val onMonthlyLimit: (Int) -> Unit,
     val onBillingDay: (Int) -> Unit,
     val onStatusIconsConfirmed: (Boolean) -> Unit,
+    val onOnlyWhenConnected: (Boolean) -> Unit,
 )
 
 @Composable
@@ -269,6 +270,13 @@ private fun BehaviourCard(settings: MeterSettings, actions: SettingsActions) {
             style = MaterialTheme.typography.bodyMedium,
             color = Palette.TextTertiary,
             modifier = Modifier.padding(bottom = 12.dp),
+        )
+        HorizontalDivider(color = Palette.Hairline)
+        ToggleRow(
+            "Show only when connected",
+            "Hides the status bar speed when Wi-Fi and mobile data are both off; the meter sleeps until a connection is back",
+            settings.onlyWhenConnected,
+            actions.onOnlyWhenConnected,
         )
         HorizontalDivider(color = Palette.Hairline)
         ToggleRow("Pause when screen is off", "Saves battery on the Tab A9", settings.pauseWhenScreenOff, actions.onPauseWhenScreenOff)

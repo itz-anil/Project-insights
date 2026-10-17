@@ -7,4 +7,7 @@
     <string name="widget_upload">Upload</string>
     <string name="widget_zero">0 KB/s</string>
     <string name="tile_label">Netpulse</string>
+    <string name="channel_idle_name">Meter waiting (offline)</string>
+    <string name="channel_idle_desc">Shown while Wi-Fi and mobile data are off. No status bar icon.</string>
+    <string name="idle_text">Waiting for Wi-Fi or mobile data</string>
 </resources>

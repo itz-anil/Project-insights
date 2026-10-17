@@ -53,6 +53,11 @@ class SpeedRepository {
         }
     }
 
+    /** No connection: show zero without adding a point to the graph. */
+    fun setOffline() {
+        _current.value = SpeedSample(0, 0, NetworkType.NONE, System.currentTimeMillis())
+    }
+
     fun setRunning(value: Boolean) {
         _running.value = value
     }

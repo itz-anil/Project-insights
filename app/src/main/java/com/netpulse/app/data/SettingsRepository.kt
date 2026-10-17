@@ -41,6 +41,8 @@ data class MeterSettings(
     val refreshMs: Int = 1_000,
     /** The user confirmed One UI shows all status bar icons (cannot be detected). */
     val statusIconsConfirmed: Boolean = false,
+    /** Show the status bar speed only while Wi-Fi or mobile data is connected. */
+    val onlyWhenConnected: Boolean = true,
 )
 
 /**
@@ -66,6 +68,7 @@ class SettingsRepository(private val context: Context) {
         val unit = stringPreferencesKey("unit")
         val refreshSeconds = intPreferencesKey("refresh_seconds") // v1.1–1.2
         val refreshMs = intPreferencesKey("refresh_ms")
+        val onlyWhenConnected = booleanPreferencesKey("only_when_connected")
         val statusIconsConfirmed = booleanPreferencesKey("status_icons_confirmed")
     }
 
@@ -83,6 +86,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setThemeMode(value: ThemeMode) = edit { it[Keys.themeMode] = value.name }
     suspend fun setUnit(value: SpeedUnit) = edit { it[Keys.unit] = value.name }
     suspend fun setRefreshMs(value: Int) = edit { it[Keys.refreshMs] = value.coerceIn(MIN_REFRESH_MS, 3_000) }
+    suspend fun setOnlyWhenConnected(value: Boolean) = edit { it[Keys.onlyWhenConnected] = value }
     suspend fun setStatusIconsConfirmed(value: Boolean) = edit { it[Keys.statusIconsConfirmed] = value }
 
     /** Remembers which alerts were already shown, so each fires once. */
@@ -121,6 +125,7 @@ class SettingsRepository(private val context: Context) {
             refreshMs = (this[Keys.refreshMs] ?: this[Keys.refreshSeconds]?.times(1_000) ?: d.refreshMs)
                 .coerceIn(MIN_REFRESH_MS, 3_000),
             statusIconsConfirmed = this[Keys.statusIconsConfirmed] ?: d.statusIconsConfirmed,
+            onlyWhenConnected = this[Keys.onlyWhenConnected] ?: d.onlyWhenConnected,
         )
     }
 }

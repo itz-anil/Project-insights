@@ -39,7 +39,37 @@ class MeterNotifications(private val context: Context) {
             setSound(null, null)
         }
         manager.createNotificationChannel(channel)
+        // IMPORTANCE_MIN: no status bar icon. Used while there is no connection.
+        manager.createNotificationChannel(
+            NotificationChannel(
+                IDLE_CHANNEL_ID,
+                context.getString(R.string.channel_idle_name),
+                NotificationManager.IMPORTANCE_MIN,
+            ).apply {
+                description = context.getString(R.string.channel_idle_desc)
+                setShowBadge(false)
+                enableVibration(false)
+                setSound(null, null)
+            }
+        )
     }
+
+    /** Shown while offline: keeps the service alive but hides the status bar speed. */
+    fun idle() = NotificationCompat.Builder(context, IDLE_CHANNEL_ID)
+        .setSmallIcon(R.drawable.ic_stat_pulse)
+        .setContentTitle(context.getString(R.string.app_name))
+        .setContentText(context.getString(R.string.idle_text))
+        .setOngoing(true)
+        .setOnlyAlertOnce(true)
+        .setSilent(true)
+        .setShowWhen(false)
+        .setLocalOnly(true)
+        .setCategory(NotificationCompat.CATEGORY_SERVICE)
+        .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+        .setPriority(NotificationCompat.PRIORITY_MIN)
+        .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+        .setContentIntent(openApp)
+        .build()
 
     fun placeholder() = base().setSmallIcon(R.drawable.ic_stat_pulse)
         .setContentTitle(context.getString(R.string.app_name))
@@ -90,6 +120,7 @@ class MeterNotifications(private val context: Context) {
 
     companion object {
         const val CHANNEL_ID = "speed_meter"
+        const val IDLE_CHANNEL_ID = "speed_meter_idle"
         const val NOTIFICATION_ID = 1001
     }
 }

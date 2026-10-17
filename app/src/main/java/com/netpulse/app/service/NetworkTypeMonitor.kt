@@ -6,6 +6,9 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import com.netpulse.app.data.ConnectionReader
 import com.netpulse.app.data.NetworkType
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Keeps the current network type up to date through a callback, so the meter
@@ -14,13 +17,12 @@ import com.netpulse.app.data.NetworkType
 class NetworkTypeMonitor(context: Context) {
     private val cm = context.getSystemService(ConnectivityManager::class.java)
 
-    @Volatile
-    var type: NetworkType = ConnectionReader(context).currentType()
-        private set
+    private val _type = MutableStateFlow(ConnectionReader(context).currentType())
+    val type: StateFlow<NetworkType> = _type.asStateFlow()
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-            type = when {
+            _type.value = when {
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkType.WIFI
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkType.MOBILE
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetworkType.ETHERNET
@@ -29,7 +31,7 @@ class NetworkTypeMonitor(context: Context) {
         }
 
         override fun onLost(network: Network) {
-            type = NetworkType.NONE
+            _type.value = NetworkType.NONE
         }
     }
 

@@ -179,6 +179,7 @@ private fun NetPulseRoot(vm: MainViewModel, startTab: Tab) {
                                 onMonthlyLimit = { vm.setMonthlyLimitMb(it) },
                                 onBillingDay = { vm.setBillingDay(it) },
                                 onStatusIconsConfirmed = { vm.setStatusIconsConfirmed(it) },
+                                onOnlyWhenConnected = { vm.setOnlyWhenConnected(it) },
                             )
                         },
                     )
