@@ -65,7 +65,11 @@ class MeterNotifications(private val context: Context) {
             }
             setContentText("${network.label()} · $usage")
         } else {
-            setContentTitle("${context.getString(R.string.app_name)} · ${SpeedFormat.detailed(downBps + upBps)}")
+            // Minimal mode: no text at all, so One UI shows only a slim one-line header,
+            // and nothing on the lock screen. Android needs this notification to keep
+            // the status bar speed (its icon) alive, so it cannot be removed completely.
+            setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            setPriority(NotificationCompat.PRIORITY_MIN)
         }
     }.build()
 

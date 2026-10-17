@@ -14,8 +14,8 @@ android {
         applicationId = "com.netpulse.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.2.0"
     }
 
     // Optional release signing: put keystore.properties in ../signing/ (not committed).

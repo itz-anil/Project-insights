@@ -2,7 +2,7 @@
 
 Status bar में live network speed (MB/s) दिखाने वाला Android app, iPhone जैसे glassy look के साथ।
 
-## Features (v1.1.0) ✅
+## Features (v1.2.0) ✅
 
 | Feature | विवरण |
 |---|---|
@@ -15,7 +15,7 @@ Status bar में live network speed (MB/s) दिखाने वाला A
 | **Floating bubble** — *optional* | Videos/games के ऊपर draggable ↓/↑ speed pill |
 | **Quick Settings tile** | Shade में live speed; tap करने पर bubble on/off |
 | **Home screen widget** | 4×2 glass widget: download, upload, आज का usage |
-| Battery बचत | Screen off पर pause; boot पर auto-start |
+| Battery बचत | Screen off पर meter पूरी तरह सो जाता है; notification/widget/bubble सिर्फ़ तब update होते हैं जब number बदले; network type callback से |
 | Samsung setup checklist | Notification, battery, status bar icons, usage access, overlay |
 | **Light / Dark mode** | Auto (tablet की setting के साथ बदलता है), या हमेशा Light / Dark; widget भी साथ बदलता है |
 | Unit और refresh | MB/s या Mbps; हर 1, 2 या 3 second पर update |
@@ -32,8 +32,8 @@ Status bar में live network speed (MB/s) दिखाने वाला A
 
 ## Tab पर install कैसे करें
 
-1. `Netpulse-v1.1.0.apk` (signed release) Tab पर copy करें।
-   v1.0.0 install है तो सीधे update हो जाएगा। पहला test (debug) version है तो **पहले उसे uninstall करें**।
+1. `Netpulse-v1.2.0.apk` (signed release) Tab पर copy करें।
+   v1.0.0 या v1.1.0 install है तो सीधे update हो जाएगा। पहला test (debug) version है तो **पहले उसे uninstall करें**।
 2. Tab पर APK खोलें → "Install unknown apps" की permission दें → Install।
 3. App खोलें → Notification permission **Allow** करें।
 4. **Settings → Samsung setup** checklist पूरी करें, खासकर:
@@ -74,6 +74,10 @@ MainActivity (Compose)
   └─ MainViewModel ← SettingsRepository, UsageRepository (NetworkStatsManager),
                      SpeedTester + SpeedTestRepository (DataStore)
 ```
+
+**Notification panel से पूरी तरह क्यों नहीं हटता?** Status bar की speed उसी notification का icon है।
+Android बिना notification के status bar में कुछ नहीं दिखाने देता। Details off करने पर वह सबसे छोटी
+(खाली एक line) हो जाती है और lock screen पर नहीं दिखती।
 
 **Status bar icon monochrome क्यों है?** Android सभी status bar icons को एक रंग (white/black)
 में tint करता है, इसलिए glass look app, notification और widgets में है।

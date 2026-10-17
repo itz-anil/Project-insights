@@ -250,9 +250,18 @@ private fun BehaviourCard(settings: MeterSettings, actions: SettingsActions) {
     GlassCard(contentPadding = PaddingValues(horizontal = 20.dp, vertical = 4.dp), verticalSpacing = 0.dp) {
         ToggleRow(
             "Notification panel details",
-            "Optional · ↓/↑ speed and today’s usage. Off = one short silent line.",
+            if (settings.showDetails) "On · ↓/↑ speed and today’s usage in the panel"
+            else "Off · only a slim empty line in the panel, hidden on the lock screen",
             settings.showDetails,
             actions.onShowDetails,
+        )
+        Text(
+            "Android draws the status bar speed from this notification, so it cannot disappear " +
+                "from the panel completely — swiping it away would also remove the speed. " +
+                "With details off it stays as small as Android allows.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Palette.TextTertiary,
+            modifier = Modifier.padding(bottom = 12.dp),
         )
         HorizontalDivider(color = Palette.Hairline)
         ToggleRow("Pause when screen is off", "Saves battery on the Tab A9", settings.pauseWhenScreenOff, actions.onPauseWhenScreenOff)
